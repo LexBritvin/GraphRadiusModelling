@@ -1,14 +1,16 @@
 import org.jgrapht.Graph;
+import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-public class CalculateGraphRadiusRunnable implements Runnable {
+public class CalculateGraphConnectivityRunnable implements Runnable {
 
     private double areaRadius;
     private double obstacleRadius;
@@ -19,7 +21,7 @@ public class CalculateGraphRadiusRunnable implements Runnable {
     private int iterCount;
     private File resultsFile;
 
-    public CalculateGraphRadiusRunnable(double areaRadius, double obstacleRadius, double deviceRadius, int minVertexCount, int maxVertexCount, int stepVertexCount, int iterCount, File resultsFile) {
+    public CalculateGraphConnectivityRunnable(double areaRadius, double obstacleRadius, double deviceRadius, int minVertexCount, int maxVertexCount, int stepVertexCount, int iterCount, File resultsFile) {
         super();
         this.areaRadius = areaRadius;
         this.obstacleRadius = obstacleRadius;
@@ -35,8 +37,8 @@ public class CalculateGraphRadiusRunnable implements Runnable {
     @Override
     public void run() {
         // Generate area and obstacle.
-        Shape area = new Ellipse2D.Double(-this.areaRadius, -this.areaRadius, 2 * this.areaRadius, 2 * this.areaRadius);
-        Shape obstacle = new Ellipse2D.Double(-this.obstacleRadius, -this.obstacleRadius, 2 * this.obstacleRadius, 2 * this.obstacleRadius);
+        Shape area = new Rectangle2D.Double(-this.areaRadius, -this.areaRadius, 2 * this.areaRadius, 2 * this.areaRadius);
+        Shape obstacle = new Rectangle2D.Double(-this.obstacleRadius, -this.obstacleRadius, 2 * this.obstacleRadius, 2 * this.obstacleRadius);
         // Calculate for different graph size.
         for (int count = this.minVertexCount; count <= this.maxVertexCount; count += this.stepVertexCount) {
             System.out.println("Calculating  (" + areaRadius + " : " + count + "); ");
@@ -44,9 +46,9 @@ public class CalculateGraphRadiusRunnable implements Runnable {
             // Generate graphs.
             long startTime = System.nanoTime();
             for (int i = 0; i < this.iterCount; i++) {
-                Graph<Point2D, DefaultEdge> graph = GraphCommon.generateGraphInArea(GraphCommon.getPointsInCircle(area, obstacle, count), obstacle, this.deviceRadius);
+                Graph<Point2D, DefaultEdge> graph = GraphCommon.generateGraphInArea(GraphCommon.getPointsInRectangle(area, obstacle, count), obstacle, this.deviceRadius);
                 // Calculate radius for graph.
-                double graphRadius = GraphCommon.calculateGraphRadiusFloyd(graph);
+                double graphRadius = GraphCommon.calculateGraphConnectvityComponents((UndirectedGraph<Point2D, DefaultEdge>) graph);
                 // Calculate expected value
                 expectedValue += graphRadius;
             }

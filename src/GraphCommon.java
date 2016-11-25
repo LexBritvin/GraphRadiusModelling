@@ -1,4 +1,6 @@
 import org.jgrapht.Graph;
+import org.jgrapht.UndirectedGraph;
+import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.alg.DijkstraShortestPath;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
@@ -13,7 +15,7 @@ import java.util.List;
 
 public class GraphCommon {
 
-    public static Graph<Point2D, DefaultEdge> generateGraphInArea(Shape area, Shape obstacle, double deviceRadius, int vCount) {
+    public static Set<Point2D> getPointsInCircle(Shape area, Shape obstacle, int vCount) {
         Random rand = new Random(System.currentTimeMillis());
         Set<Point2D> points = new HashSet<>();
         Rectangle2D areaBounds = area.getBounds2D();
@@ -39,6 +41,34 @@ public class GraphCommon {
             }
         }
 
+        return points;
+    }
+
+    public static Set<Point2D> getPointsInRectangle(Shape area, Shape obstacle, int vCount) {
+        Random rand = new Random(System.currentTimeMillis());
+        Set<Point2D> points = new HashSet<>();
+        Rectangle2D areaBounds = area.getBounds2D();
+        Rectangle2D obstacleBounds = obstacle.getBounds2D();
+        // Generate vertices.
+        while (points.size() != vCount) {
+            // Calculate available distance from center.
+            double x = (rand.nextDouble() * 2 - 1) * areaBounds.getWidth() / 2;
+            double y = (rand.nextDouble() * 2 - 1) * areaBounds.getHeight() / 2;
+
+            // Generate point.
+            Point2D point = new Point2D.Double(x, y);
+            if (obstacle.contains(point)) {
+                point.setLocation(x + Math.signum(x) * obstacleBounds.getWidth() / 2, y + Math.signum(y) * obstacleBounds.getHeight() / 2);
+            }
+            if (area.contains(point) && !obstacle.contains(point)) {
+                points.add(point);
+            }
+        }
+
+        return points;
+    }
+
+    public static Graph<Point2D, DefaultEdge> generateGraphInArea(Set<Point2D> points, Shape obstacle, double deviceRadius) {
         // Generate graph vertices.
         Graph<Point2D, DefaultEdge> g = new SimpleGraph<>(DefaultEdge.class);
         points.forEach(g::addVertex);
@@ -88,6 +118,12 @@ public class GraphCommon {
         // Graph radius is infinite when the graph is disconnected.
         // True to skip infinite values and use only finite values for radius.
         return floyd.getRadius(true);
+    }
+
+    public static double calculateGraphConnectvityComponents(UndirectedGraph<Point2D, DefaultEdge> graph) {
+        ConnectivityInspector<Point2D, DefaultEdge> conn = new ConnectivityInspector<>(graph);
+        // Calculate connectivity components count.
+        return conn.connectedSets().size();
     }
 
     private static boolean intersectsShape(Line2D line, Shape shape) {
